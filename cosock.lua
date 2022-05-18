@@ -135,18 +135,13 @@ do
       name = "cosock."..name
     end
     ]]
-
+    local subbed
     if name == "socket" then
-      name = "cosock.socket"
-    elseif name == "socket.http" then
-      name = "cosock.socket.http"
-    elseif name == "ssl.https" then
-      name = "cosock.ssl.https"
+      subbed = "cosock.socket"
     elseif name == "ssl" then
-      name = "cosock.ssl"
+      subbed = "cosock.ssl"
     end
-
-    return realrequire(name)
+    return subbed and realrequire(subbed) or m.asyncify(name)
   end
 
   local fakeenv = {
@@ -156,6 +151,10 @@ do
 
   function m.asyncify(name)
     local err
+    package.asyncify_loaded = package.asyncify_loaded or {}
+    if package.asyncify_loaded[name] then
+      return package.asyncify_loaded[name]
+    end
     for _,searcher in ipairs(package.searchers) do
       local loader, loc = searcher(name)
       if type(loader) == "function" then
@@ -174,8 +173,13 @@ do
 
         -- load module with loader
         local module = loader(name, loc)
-
+        package.asyncify_loaded[name] = module
         return module
+      -- If the last searcher returns nil we need to check the
+      -- package.loaded or we may miss some std lib packages
+      elseif loader == nil and package.loaded[name] then
+        package.asyncify_loaded[name] = package.loaded[name]
+        return package.loaded[name]
       else
         -- non-function values mean error, keep last non-nil value
         err = loader or err
