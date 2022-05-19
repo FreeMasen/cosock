@@ -58,7 +58,9 @@ local two = cosock.asyncify "test.asyncify.two"
 assert(type(two) ~= "string", "Expected table found string for two: " .. tostring(two))
 assert(two._COSOCK_VERSION == cosock._VERSION, "(two) Exepcted cosock version ".. cosock._VERSION .." found " .. tostring(two._COSOCK_VERSION))
 assert(sync_two ~= two, "require produced the same result as asyncify")
-assert(sync_two._COSOCK_VERSION == nil, "require test.asyncify.one returned cosock version " .. tostring(sync_one._COSOCK_VERSION))
+assert(sync_two._COSOCK_VERSION == nil, "require test.asyncify.one returned cosock version " .. tostring(sync_two._COSOCK_VERSION))
+
+
 
 local t = require "table"
 local at = cosock.asyncify("table")
