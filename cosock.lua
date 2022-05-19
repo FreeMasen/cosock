@@ -151,6 +151,8 @@ do
 
   function m.asyncify(name)
     local err
+    if name == "socket" then name = "cosock.socket" end
+    if name == "ssl" then name = "cosock.ssl" end
     package.asyncify_loaded = package.asyncify_loaded or {}
     if package.asyncify_loaded[name] then
       return package.asyncify_loaded[name]

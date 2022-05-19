@@ -13,6 +13,7 @@ local expected_requires = {
     ["[C]"] = true,
 }
 -- import the sync versions of one and two for comparison later
+local sync_zero = require("socket")
 local sync_one = require("test.asyncify.one")
 local sync_two = require("test.asyncify.two")
 
@@ -45,6 +46,12 @@ require = function(name)
     end
     return _realrequire(name)
 end
+
+local zero = cosock.asyncify "socket"
+assert(type(zero) ~= "string", "Expected table found string for two: " .. tostring(two))
+assert(zero._COSOCK_VERSION == cosock._VERSION, "(zero) Exepcted cosock version ".. cosock._VERSION .." found " .. tostring(zero._COSOCK_VERSION))
+assert(zero ~= sync_zero, "require produced the same result as asyncify")
+assert(sync_zero._COSOCK_VERSION == nil, "require socket returned cosock version " .. tostring(sync_zero._COSOCK_VERSION))
 
 print("Trying non-nested asyncify")
 local one = cosock.asyncify "test.asyncify.one"
