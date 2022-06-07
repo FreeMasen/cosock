@@ -148,7 +148,24 @@ do
     require = wrappedrequire
   }
   setmetatable(fakeenv, {__index = _ENV })
-
+  package.asyncify_loaded = package.asyncify_loaded or {}
+  if #package.asyncify_loaded <= 0 then
+    local default_loaded = {
+      "base",
+      "package",
+      "coroutine",
+      "table",
+      "io",
+      "os",
+      "string",
+      "math",
+      "utf8",
+      "debug",
+    }
+    for _,name in ipairs(default_loaded) do
+      package.asyncify_loaded[name] = package.loaded[name]
+    end
+  end
   function m.asyncify(name)
     local err
     if name == "socket" then name = "cosock.socket" end
@@ -177,11 +194,6 @@ do
         local module = loader(name, loc)
         package.asyncify_loaded[name] = module
         return module
-      -- If the last searcher returns nil we need to check the
-      -- package.loaded or we may miss some std lib packages
-      elseif loader == nil and package.loaded[name] then
-        package.asyncify_loaded[name] = package.loaded[name]
-        return package.loaded[name]
       else
         -- non-function values mean error, keep last non-nil value
         err = loader or err
