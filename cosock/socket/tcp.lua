@@ -92,22 +92,22 @@ m.receive = passthrough("receive", function()
         return pattern
       end
     end,
+    error = function(_, err, partial)
+      new_part(partial)
+      if pattern == "*a" and err == "closed" then
+        return table.concat(parts)
+      end
+      return nil, err, table.concat(parts)
+    end,
     -- transform output after final success or (non-block) error
-    output = function(recv, err, partial)
+    output = function(recv)
       assert(not (recv and partial), "socket recieve returned both data and partial data")
 
       if #parts == 0 then
-        return recv, err, partial
+        return recv
       end
-
-      new_part(recv or partial)
-      local data = table.concat(parts)
-
-      if err then
-        return nil, err, data
-      else
-        return data
-      end
+      new_part(recv)
+      return table.concat(parts)
     end,
   }
 end)
