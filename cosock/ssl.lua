@@ -57,12 +57,12 @@ m.receive = passthrough("receive", {
 })
 
 m.send = passthrough("send", {
-  output = function(success, err, ...)
+  error = function(_sock, err, ...)
     if err == "timeout" then
       err = "wantwrite"
     end
-    return success, err, ...
-  end
+    return nil, err, ...
+  end,
 })
 
 m.setdane = passthrough("setdane")

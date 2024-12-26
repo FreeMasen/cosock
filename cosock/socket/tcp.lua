@@ -24,13 +24,24 @@ end})
 
 local passthrough = internals.passthroughbuilder(recvmethods, sendmethods)
 
-m.accept = passthrough("accept", {
-  output = function(inner_sock)
+m.accept = passthrough("accept", function()
+  local function ctor(inner_sock)
     assert(inner_sock, "transform called on error from accept")
     inner_sock:settimeout(0)
     return setmetatable({inner_sock = inner_sock, class = "tcp{client}"}, { __index = m})
   end
-})
+  return {
+    output = function(inner_sock)
+      return ctor(inner_sock)
+    end,
+    error = function(inner_sock, err, ...)
+      if err == "already connected" then
+        return ctor(inner_sock)
+      end
+      return nil, err, ...
+    end,
+  }
+end)
 
 m.bind = passthrough("bind")
 
@@ -40,7 +51,14 @@ end
 
 m.close = passthrough("close")
 
-m.connect = passthrough("connect")
+m.connect = passthrough("connect", {
+  error = function(sock, err)
+    if err == "already connected" then
+      return sock
+    end
+    return nil, err
+  end
+})
 
 m.dirty = passthrough("dirty")
 
@@ -92,22 +110,22 @@ m.receive = passthrough("receive", function()
         return pattern
       end
     end,
-    -- transform output after final success or (non-block) error
-    output = function(recv, err, partial)
-      assert(not (recv and partial), "socket recieve returned both data and partial data")
-
+    error = function(_sock, err, partial)
+      new_part(partial)
+      if pattern == "*a" and err == "closed" then
+        new_part(partial)
+        return table.concat(parts)
+      end
+      return nil, err, table.concat(parts)
+    end,
+    -- transform output after final success
+    output = function(recv)
+      assert(not (recv and partial), "socket receive returned both data and partial data")
       if #parts == 0 then
-        return recv, err, partial
+        return recv
       end
-
-      new_part(recv or partial)
-      local data = table.concat(parts)
-
-      if err then
-        return nil, err, data
-      else
-        return data
-      end
+      new_part(recv)
+      return table.concat(parts)
     end,
   }
 end)
