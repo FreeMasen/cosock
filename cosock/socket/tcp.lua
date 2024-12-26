@@ -110,17 +110,17 @@ m.receive = passthrough("receive", function()
         return pattern
       end
     end,
-    error = function(_, err, partial)
+    error = function(_sock, err, partial)
       new_part(partial)
       if pattern == "*a" and err == "closed" then
+        new_part(partial)
         return table.concat(parts)
       end
       return nil, err, table.concat(parts)
     end,
-    -- transform output after final success or (non-block) error
+    -- transform output after final success
     output = function(recv)
-      assert(not (recv and partial), "socket recieve returned both data and partial data")
-
+      assert(not (recv and partial), "socket receive returned both data and partial data")
       if #parts == 0 then
         return recv
       end
